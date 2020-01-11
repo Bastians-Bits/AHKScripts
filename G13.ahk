@@ -75,6 +75,7 @@ OnMessage(WM_INPUT, "InputMsg")
 r := AHKHID_Register(65280, 0, hGui, 288)
 
 ; Get the current open programm
+; WIP - Does not work atm
 if WinActive("ahk_class SWT_Window()") ; Eclipse
     prefix := "Eclipse_"
 else
