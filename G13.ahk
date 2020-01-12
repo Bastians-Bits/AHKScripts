@@ -74,13 +74,6 @@ OnMessage(WM_INPUT, "InputMsg")
 ; EDIT HERE your device id
 r := AHKHID_Register(65280, 0, hGui, 288)
 
-; Get the current open programm
-; WIP - Does not work atm
-if WinActive("ahk_class SWT_Window()") ; Eclipse
-    prefix := "Eclipse_"
-else
-    prefix := "Button_"
-
 ; The actual script ends here, everything else are functions
 Return
 
@@ -93,6 +86,12 @@ Return
 InputMsg(wParam, lParam) {
     local devh
     Critical
+
+    ; Reading of the current active window for usage
+    WinGet, ACTIVE_PID, PID, A          ; Stores the ahk_pid of the active window
+    WinGet, ACTIVE_EXE, ProcessName, A  ; Stores the ahk_exe of the active window
+    WinGetClass, ACTIVE_CLASS, A        ; Stores the ahk_class of the active window
+    WinGetTitle, ACTIVE_TITLE, A        ; Stores the title of the active window    
 
     ; Get handle of device
     devh := AHKHID_GetInputInfo(lParam, II_DEVHANDLE)
@@ -134,10 +133,10 @@ InputMsg(wParam, lParam) {
                 pos += 1
             }
             if (bitsPressed.Length() > 0) {
-                SortArray(bitsPressed)                              ; To get the buttons in the right order (alphabetical)
-                if IsLabel(prefix . join(bitsPressed)) {
-                    local targetLabel = prefix . join(bitsPressed)  ; Build the sub-function name ...
-                    Gosub, %targetLabel%                            ; ... and call it
+                SortArray(bitsPressed)                                  ; To get the buttons in the right order (alphabetical)
+                if IsLabel("Button_" . join(bitsPressed)) {
+                    local targetLabel = "Button_" . join(bitsPressed)   ; Build the sub-function name ...
+                    Gosub, %targetLabel%                                ; ... and call it
                     return
                 }
             }
@@ -151,22 +150,46 @@ InputMsg(wParam, lParam) {
 ;
 ;------------------------------------------------------------------------------
 Button_G1:
-    OSD("New Class")
+    if (ACTIVE_CLASS = "SWT_Window0") AND (ACTIVE_EXE = "javaw.exe") { ; Eclipse
+        OSD("New Class")
+        SendInput ^n
+        Sleep 500
+        SendInput Class
+        Sleep 500
+        SendInput {Enter}
+        return
+    }
+    SendInput ^n
 return
 
 Button_G1_G20:
-    OSD("New File")
+    if (ACTIVE_CLASS = "SWT_Window0") AND (ACTIVE_EXE = "javaw.exe") { ; Eclipse
+        OSD("New File")
+        SendInput ^n
+        Sleep 500
+        SendInput {Enter} ; Eclipse set the focus automatically to 'File'
+        return
+    }
+    
 return
 
 Button_G2:
-    OSD("New Package")
+    if (ACTIVE_CLASS = "SWT_Window0") AND (ACTIVE_EXE = "javaw.exe") { ; Eclipse
+        OSD("New Package")
+        SendInput ^n
+        Sleep 500
+        SendInput Package
+        Sleep 500
+        SendInput {Enter}
+        return
+    }
 return
 
 ;------------------------------------------------------------------------------
 ;
 ; Helper functions
 ;
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------
 ; Sort an Array 
 ; From: https://sites.google.com/site/ahkref/custom-functions/sortarray
 SortArray(Array, Order="A") {
@@ -256,7 +279,7 @@ ConvertBase(InputBase, OutputBase, nptr) {   ; Base 2 - 36
 
 ; Put the below anywhere in your script that is not part of a subroutine. Not at the point where you want the actual text to appear on screen: just at the bottom of your script is fine.
 ; https://autohotkey.com/board/topic/77403-show-text-during-program/
-OSD(Text="OSD",Colour="Black",Duration="1500",Font="Times New Roman",Size="64")
+OSD(Text="OSD",Colour="Black",Duration="2000",Font="Times New Roman",Size="64")
 {   
     local x := 0
     local y := A_ScreenHeight - 350
@@ -264,7 +287,7 @@ OSD(Text="OSD",Colour="Black",Duration="1500",Font="Times New Roman",Size="64")
     Gui, 2:Font, c%Colour% s%Size%, %Font%  ; If desired, use a line like this to set a new default font for the window.
     GuiControl, 2:Font, OSDControl          ; Put the above font into effect for a control.
     GuiControl, 2:, OSDControl, %Text%
-    Gui, 2:Show, x%x% y%y%, NoActivate, OSDGui      ; NoActivate avoids deactivating the currently active window; add "X600 Y800" to put the text at some specific place on the screen instead of centred.
+    Gui, 2:Show, x%x% y%y% NoActivate, OSDGui      ; NoActivate avoids deactivating the currently active window; add "X600 Y800" to put the text at some specific place on the screen instead of centred.
     SetTimer, OSDTimer, -%Duration%
     Return 
 }
